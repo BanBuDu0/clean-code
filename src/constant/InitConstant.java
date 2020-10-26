@@ -12,10 +12,7 @@ public interface InitConstant {
     interface OverbookFactor {
         double SM = 1.5;
         double DIS = 1.2;
-    }
-
-    interface InitOverbookFactor {
-        double SM = 1;
-        double DIS = 1;
+        double OTHER = 1.5;
+        double INIT = 1;
     }
 }

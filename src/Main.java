@@ -1,8 +1,7 @@
-import constant.InitConstant;
-import service.IMinimumFundService;
-import service.impl.DisSharedFundServiceImpl;
+import service.IBaseFundService;
+import service.impl.DisDedicatedShareFundServiceImpl;
 import service.impl.MinimumFundServiceImpl;
-import service.impl.SmSharedFundServiceImpl;
+import service.impl.SmDedicatedShareFundServiceImpl;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -25,9 +24,9 @@ public class Main {
     private final List<List<Integer>> loadOther = new ArrayList<>();
     private int timeWindowLen = 0;
 
-    private IMinimumFundService minimumFundService;
-    private SmSharedFundServiceImpl smSharedFundService;
-    private DisSharedFundServiceImpl disSharedFundService;
+    private IBaseFundService minimumFundService;
+    private SmDedicatedShareFundServiceImpl smSharedFundService;
+    private DisDedicatedShareFundServiceImpl disSharedFundService;
 
     private final List<List<Double>> rewardMin = new ArrayList<>();
     private final List<List<Double>> rewardShardSm = new ArrayList<>();
@@ -93,23 +92,24 @@ public class Main {
                 .setPoolMinRate(poolMinRate)
                 .setRewardMax(rewardMax)
                 .build();
+        double[] resultOfMinFund = minimumFundService.calculateFund(t);
         for (int city = 0; city < CITY_NUM; ++city) {
-            rewardMin.get(city).add(minimumFundService.calculateRewardMin(city, t));
+            rewardMin.get(city).add(resultOfMinFund[city]);
         }
     }
 
     private void calculateSmSharedFund(int t) {
-        smSharedFundService = new SmSharedFundServiceImpl.Builder()
+        smSharedFundService = new SmDedicatedShareFundServiceImpl.Builder()
                 .setLoad(loadSm)
                 .setRewardMax(rewardMax)
                 .setRewardMin(rewardMin)
                 .setRewardPool(rewardPool)
                 .setTimeWindowLen(timeWindowLen)
+                .setLastRewardSum(lastRewardSum)
                 .build();
-
+        double[] resultOfRewardShardSm = smSharedFundService.calculateFund(t);
         for (int city = 0; city < CITY_NUM; ++city) {
-            double resultOfRewardShardSm = smSharedFundService.calculateShared(city, t, lastRewardSum[city]);
-            rewardShardSm.get(city).add(resultOfRewardShardSm);
+            rewardShardSm.get(city).add(resultOfRewardShardSm[city]);
         }
     }
 
@@ -118,7 +118,7 @@ public class Main {
         for (int city = 0; city < CITY_NUM; ++city) {
             tempShardSm[city] = rewardShardSm.get(city).get(t);
         }
-        disSharedFundService = new DisSharedFundServiceImpl.Builder()
+        disSharedFundService = new DisDedicatedShareFundServiceImpl.Builder()
                 .setLoad(loadDis)
                 .setRewardMax(rewardMax)
                 .setTimeWindowLen(timeWindowLen)
@@ -126,12 +126,28 @@ public class Main {
                 .setDedicatedSms(smSharedFundService.getDedicated())
                 .setSharedSms(tempShardSm)
                 .setRewardSmPool(smSharedFundService.getRewardSmPool())
+                .setLastRewardSum(lastRewardSum)
                 .build();
 
+        double[] resultOfRewardShardDis = disSharedFundService.calculateFund(t);
         for (int city = 0; city < CITY_NUM; ++city) {
-            double resultOfRewardShardDis = disSharedFundService.calculateShared(city, t, lastRewardSum[city]);
-            rewardShardDis.get(city).add(resultOfRewardShardDis);
+            rewardShardDis.get(city).add(resultOfRewardShardDis[city]);
         }
+    }
+
+    private void calculateOtherFund(int t) {
+
+    }
+
+    private String verifyRewardMax(int t) {
+        for (int city = 0; city < CITY_NUM; ++city) {
+            double tempTotal = rewardMin.get(city).get(t) + rewardShardSm.get(city).get(t)
+                    + rewardShardDis.get(city).get(t);
+            if (tempTotal > rewardMax.get(city).get(t)) {
+                return "ERROR";
+            }
+        }
+        return null;
     }
 
 
@@ -140,6 +156,13 @@ public class Main {
             calculateRewardMin(t);
             calculateSmSharedFund(t);
             calculateDisSharedFund(t);
+            String err = verifyRewardMax(t);
+            if (null != err) {
+                System.out.println(err);
+                return;
+            }
+
+            calculateOtherFund(t);
 
             // TODO
             for (int city = 0; city < CITY_NUM; ++city) {

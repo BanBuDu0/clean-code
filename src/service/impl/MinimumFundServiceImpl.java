@@ -1,33 +1,38 @@
 package service.impl;
 
 import constant.InitConstant.Global;
-import service.IMinimumFundService;
+import service.IBaseFundService;
 
 import java.util.List;
 
 /**
  * @author Sunyuejun
  */
-public class MinimumFundServiceImpl implements IMinimumFundService {
+public class MinimumFundServiceImpl implements IBaseFundService {
     private final int rewardPool, poolMinRate;
     private final List<List<Integer>> rewardMax;
+    private final double[] result;
 
     public MinimumFundServiceImpl(int rewardPool, int poolMinRate, List<List<Integer>> rewardMax) {
         this.rewardPool = rewardPool;
         this.poolMinRate = poolMinRate;
         this.rewardMax = rewardMax;
+        this.result = new double[Global.CITY_NUM];
     }
 
     @Override
-    public double calculateRewardMin(int city, int t) {
-        int sumOfRewardMax = 0;
-        for (int i = 0; i < Global.CITY_NUM; ++i) {
-            sumOfRewardMax += rewardMax.get(city).get(t);
+    public double[] calculateFund(int t) {
+        for (int city = 0; city < Global.CITY_NUM; ++city) {
+            int sumOfRewardMax = 0;
+            for (int i = 0; i < Global.CITY_NUM; ++i) {
+                sumOfRewardMax += rewardMax.get(city).get(t);
+            }
+            result[city] = Math.min(Math.ceil(rewardPool * ((double) poolMinRate / 100) *
+                    ((double) rewardMax.get(city).get(t) / sumOfRewardMax)), rewardMax.get(city).get(t));
         }
-        return Math.min(
-                Math.ceil(rewardPool * ((double) poolMinRate / 100) * ((double) rewardMax.get(city).get(t) / sumOfRewardMax)),
-                rewardMax.get(city).get(t));
+        return result;
     }
+
 
     public static class Builder {
         private int rewardPool, poolMinRate;

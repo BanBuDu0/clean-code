@@ -2,31 +2,35 @@ package service.impl;
 
 import constant.InitConstant.OverbookFactor;
 import constant.InitConstant.Global;
-import constant.InitConstant.InitOverbookFactor;
-import service.ISharedFundService;
+import service.IDedicatedShareShareFundService;
 
 import java.util.List;
 
 /**
  * @author Sunyuejun
  */
-public class SmSharedFundServiceImpl implements ISharedFundService {
-    private final double[] idealShard, overFactor, dedicated;
+public class SmDedicatedShareFundServiceImpl implements IDedicatedShareShareFundService {
+    private final double[] idealShard, dedicated, lastRewardSum;
     private final List<List<Integer>> load, rewardMax;
     private final List<List<Double>> rewardMin;
     private final int rewardPool;
+    private final double[][] overFactor;
 
     private double rewardSmPool;
 
-    private SmSharedFundServiceImpl(Builder builder) {
+    private final double[] result;
+
+    private SmDedicatedShareFundServiceImpl(Builder builder) {
         this.load = builder.load;
         this.rewardMax = builder.rewardMax;
         this.rewardPool = builder.rewardPool;
         this.rewardMin = builder.rewardMin;
+        this.lastRewardSum = builder.lastRewardSum;
 
         this.idealShard = new double[Global.CITY_NUM];
-        this.overFactor = new double[builder.timeWindowLen];
+        this.overFactor = new double[Global.CITY_NUM][builder.timeWindowLen];
         this.dedicated = new double[Global.CITY_NUM];
+        this.result = new double[Global.CITY_NUM];
     }
 
 
@@ -39,18 +43,20 @@ public class SmSharedFundServiceImpl implements ISharedFundService {
     }
 
     @Override
-    public void calculateOverFactor(int city, int t, double lastRewardSum) {
-        double lastOverFactor = t == 0 ? InitOverbookFactor.SM : overFactor[t - 1];
-        if (load.get(city).get(t) * lastOverFactor < lastRewardSum) {
-            overFactor[t] = 1;
-        } else {
-            overFactor[t] = OverbookFactor.SM;
+    public void calculateOverFactor(int t) {
+        for (int city = 0; city < Global.CITY_NUM; ++city) {
+            double lastOverFactor = t == 0 ? OverbookFactor.INIT : overFactor[city][t - 1];
+            if (load.get(city).get(t) * lastOverFactor < lastRewardSum[city]) {
+                overFactor[city][t] = 1;
+            } else {
+                overFactor[city][t] = OverbookFactor.SM;
+            }
         }
     }
 
     @Override
     public double calculateDedicated(int city, int t) {
-        return Math.min(overFactor[t] * load.get(city).get(t), rewardMin.get(city).get(t));
+        return Math.min(overFactor[city][t] * load.get(city).get(t), rewardMin.get(city).get(t));
     }
 
     @Override
@@ -58,29 +64,33 @@ public class SmSharedFundServiceImpl implements ISharedFundService {
         dedicated[city] = calculateDedicated(city, t);
         double result = Math.max(0,
                 Math.min(
-                        overFactor[t] * load.get(city).get(t) - dedicated[city],
+                        overFactor[city][t] * load.get(city).get(t) - dedicated[city],
                         rewardMax.get(city).get(t) - rewardMin.get(city).get(t)));
         idealShard[city] = result;
         return result;
     }
 
     @Override
-    public double calculateShared(int city, int t, double lastRewardSum) {
-        calculateOverFactor(city, t, lastRewardSum);
-        double totalIdealSharedSm = 0;
-        rewardSmPool = rewardPool;
-        for (int i = 0; i < Global.CITY_NUM; ++i) {
-            rewardSmPool -= rewardMin.get(i).get(t);
-            totalIdealSharedSm += calculateIdealShard(i, t);
+    public double[] calculateFund(int t) {
+        calculateOverFactor(t);
+        for (int city = 0; city < Global.CITY_NUM; ++city) {
+            double totalIdealSharedSm = 0;
+            rewardSmPool = rewardPool;
+            for (int i = 0; i < Global.CITY_NUM; ++i) {
+                rewardSmPool -= rewardMin.get(i).get(t);
+                totalIdealSharedSm += calculateIdealShard(i, t);
+            }
+            result[city] = Math.min(idealShard[city], (idealShard[city] / totalIdealSharedSm) * rewardSmPool);
         }
-
-        return Math.min(idealShard[city], (idealShard[city] / totalIdealSharedSm) * rewardSmPool);
+        return result;
     }
+
 
     public static class Builder {
         private List<List<Integer>> load, rewardMax;
         private int rewardPool, timeWindowLen;
         private List<List<Double>> rewardMin;
+        private double[] lastRewardSum;
 
         public Builder() {
             this.rewardPool = 0;
@@ -88,6 +98,7 @@ public class SmSharedFundServiceImpl implements ISharedFundService {
             this.load = null;
             this.rewardMax = null;
             this.rewardMin = null;
+            this.lastRewardSum = null;
         }
 
         public Builder setLoad(List<List<Integer>> load) {
@@ -115,8 +126,13 @@ public class SmSharedFundServiceImpl implements ISharedFundService {
             return this;
         }
 
-        public SmSharedFundServiceImpl build() {
-            return new SmSharedFundServiceImpl(this);
+        public Builder setLastRewardSum(double[] lastRewardSum) {
+            this.lastRewardSum = lastRewardSum;
+            return this;
+        }
+
+        public SmDedicatedShareFundServiceImpl build() {
+            return new SmDedicatedShareFundServiceImpl(this);
         }
     }
 
