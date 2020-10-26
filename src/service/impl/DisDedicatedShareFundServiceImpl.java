@@ -6,18 +6,31 @@ import service.IDedicatedShareShareFundService;
 
 import java.util.List;
 
+import static constant.InitConstant.Global.CITY_NUM;
+
 /**
  * @author Sunyuejun
  */
 public class DisDedicatedShareFundServiceImpl implements IDedicatedShareShareFundService {
-    private final List<List<Integer>> load, rewardMax;
-    private final List<List<Double>> rewardMin;
-    private final double rewardSmPool;
-    private final double[] dedicatedSms, sharedSms, lastRewardSum, idealShard;
-    private final double[][] overFactor;
-    private final double[] result;
+    private static final DisDedicatedShareFundServiceImpl INSTANCE = new DisDedicatedShareFundServiceImpl();
+    private List<List<Integer>> load, rewardMax;
+    private List<List<Double>> rewardMin;
+    private double rewardSmPool;
+    private double[] dedicatedSms, sharedSms;
+    private int[] lastRewardSum;
 
-    private DisDedicatedShareFundServiceImpl(Builder builder) {
+    private double[][] overFactor = null;
+    private final double[] idealShard = new double[CITY_NUM];
+    private final double[] result = new double[CITY_NUM];
+    private double rewardDisPool;
+
+
+    public static DisDedicatedShareFundServiceImpl getInstance() {
+        return INSTANCE;
+    }
+
+
+    private void setParam(Builder builder) {
         this.load = builder.load;
         this.rewardMax = builder.rewardMax;
         this.rewardSmPool = builder.rewardSmPool;
@@ -25,10 +38,14 @@ public class DisDedicatedShareFundServiceImpl implements IDedicatedShareShareFun
         this.dedicatedSms = builder.dedicatedSms;
         this.sharedSms = builder.sharedSms;
         this.lastRewardSum = builder.lastRewardSum;
+        if (null == overFactor) {
+            this.overFactor = new double[CITY_NUM][builder.timeWindowLen];
+        }
+    }
 
-        this.idealShard = new double[Global.CITY_NUM];
-        this.overFactor = new double[Global.CITY_NUM][builder.timeWindowLen];
-        this.result = new double[Global.CITY_NUM];
+
+    public double getRewardDisPool() {
+        return rewardDisPool;
     }
 
 
@@ -63,7 +80,8 @@ public class DisDedicatedShareFundServiceImpl implements IDedicatedShareShareFun
     public double[] calculateFund(int t) {
         calculateOverFactor(t);
         for (int city = 0; city < Global.CITY_NUM; ++city) {
-            double totalIdealSharedDis = 0, rewardDisPool = this.rewardSmPool;
+            double totalIdealSharedDis = 0;
+            rewardDisPool = this.rewardSmPool;
             for (int i = 0; i < Global.CITY_NUM; ++i) {
                 rewardDisPool -= sharedSms[i];
                 totalIdealSharedDis += calculateIdealShard(i, t);
@@ -79,7 +97,10 @@ public class DisDedicatedShareFundServiceImpl implements IDedicatedShareShareFun
         private List<List<Double>> rewardMin;
         private double rewardSmPool;
         private int timeWindowLen;
-        private double[] dedicatedSms, sharedSms, lastRewardSum;
+        private double[] dedicatedSms, sharedSms;
+        private int[] lastRewardSum;
+        private final DisDedicatedShareFundServiceImpl disDedicatedShareFundService
+                = DisDedicatedShareFundServiceImpl.getInstance();
 
         public Builder() {
             this.rewardSmPool = 0;
@@ -91,8 +112,6 @@ public class DisDedicatedShareFundServiceImpl implements IDedicatedShareShareFun
             this.sharedSms = null;
             this.lastRewardSum = null;
         }
-
-        // TODO build 这里换成单例模式
 
         public Builder setLoad(List<List<Integer>> load) {
             this.load = load;
@@ -129,13 +148,14 @@ public class DisDedicatedShareFundServiceImpl implements IDedicatedShareShareFun
             return this;
         }
 
-        public Builder setLastRewardSum(double[] lastRewardSum) {
+        public Builder setLastRewardSum(int[] lastRewardSum) {
             this.lastRewardSum = lastRewardSum;
             return this;
         }
 
         public DisDedicatedShareFundServiceImpl build() {
-            return new DisDedicatedShareFundServiceImpl(this);
+            disDedicatedShareFundService.setParam(this);
+            return disDedicatedShareFundService;
         }
     }
 

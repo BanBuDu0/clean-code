@@ -9,15 +9,19 @@ import java.util.List;
  * @author Sunyuejun
  */
 public class MinimumFundServiceImpl implements IBaseFundService {
-    private final int rewardPool, poolMinRate;
-    private final List<List<Integer>> rewardMax;
-    private final double[] result;
+    private static final MinimumFundServiceImpl INSTANCE = new MinimumFundServiceImpl();
+    private int rewardPool, poolMinRate;
+    private List<List<Integer>> rewardMax;
+    private final double[] result = new double[Global.CITY_NUM];
 
-    public MinimumFundServiceImpl(int rewardPool, int poolMinRate, List<List<Integer>> rewardMax) {
-        this.rewardPool = rewardPool;
-        this.poolMinRate = poolMinRate;
-        this.rewardMax = rewardMax;
-        this.result = new double[Global.CITY_NUM];
+    public static MinimumFundServiceImpl getInstance() {
+        return INSTANCE;
+    }
+
+    private void setParam(Builder builder) {
+        this.rewardPool = builder.rewardPool;
+        this.poolMinRate = builder.poolMinRate;
+        this.rewardMax = builder.rewardMax;
     }
 
     @Override
@@ -25,7 +29,7 @@ public class MinimumFundServiceImpl implements IBaseFundService {
         for (int city = 0; city < Global.CITY_NUM; ++city) {
             int sumOfRewardMax = 0;
             for (int i = 0; i < Global.CITY_NUM; ++i) {
-                sumOfRewardMax += rewardMax.get(city).get(t);
+                sumOfRewardMax += rewardMax.get(i).get(t);
             }
             result[city] = Math.min(Math.ceil(rewardPool * ((double) poolMinRate / 100) *
                     ((double) rewardMax.get(city).get(t) / sumOfRewardMax)), rewardMax.get(city).get(t));
@@ -37,6 +41,7 @@ public class MinimumFundServiceImpl implements IBaseFundService {
     public static class Builder {
         private int rewardPool, poolMinRate;
         private List<List<Integer>> rewardMax;
+        private final MinimumFundServiceImpl minimumFundService = MinimumFundServiceImpl.getInstance();
 
         public Builder() {
             this.rewardPool = 0;
@@ -60,7 +65,10 @@ public class MinimumFundServiceImpl implements IBaseFundService {
         }
 
         public MinimumFundServiceImpl build() {
-            return new MinimumFundServiceImpl(rewardPool, poolMinRate, rewardMax);
+
+            minimumFundService.setParam(this);
+
+            return minimumFundService;
         }
     }
 

@@ -6,31 +6,37 @@ import service.IDedicatedShareShareFundService;
 
 import java.util.List;
 
+import static constant.InitConstant.Global.CITY_NUM;
+
 /**
  * @author Sunyuejun
  */
 public class SmDedicatedShareFundServiceImpl implements IDedicatedShareShareFundService {
-    private final double[] idealShard, dedicated, lastRewardSum;
-    private final List<List<Integer>> load, rewardMax;
-    private final List<List<Double>> rewardMin;
-    private final int rewardPool;
-    private final double[][] overFactor;
+    private static final SmDedicatedShareFundServiceImpl INSTANCE = new SmDedicatedShareFundServiceImpl();
+    private int[] lastRewardSum;
+    private List<List<Integer>> load, rewardMax;
+    private List<List<Double>> rewardMin;
+    private int rewardPool;
+    private double[][] overFactor;
 
     private double rewardSmPool;
+    private final double[] idealShard = new double[CITY_NUM];
+    private final double[] dedicated = new double[CITY_NUM];
+    private final double[] result = new double[CITY_NUM];
 
-    private final double[] result;
+    public static SmDedicatedShareFundServiceImpl getInstance() {
+        return INSTANCE;
+    }
 
-    private SmDedicatedShareFundServiceImpl(Builder builder) {
+    private void setParam(Builder builder) {
         this.load = builder.load;
         this.rewardMax = builder.rewardMax;
         this.rewardPool = builder.rewardPool;
         this.rewardMin = builder.rewardMin;
         this.lastRewardSum = builder.lastRewardSum;
-
-        this.idealShard = new double[Global.CITY_NUM];
-        this.overFactor = new double[Global.CITY_NUM][builder.timeWindowLen];
-        this.dedicated = new double[Global.CITY_NUM];
-        this.result = new double[Global.CITY_NUM];
+        if (null == overFactor) {
+            this.overFactor = new double[CITY_NUM][builder.timeWindowLen];
+        }
     }
 
 
@@ -90,7 +96,9 @@ public class SmDedicatedShareFundServiceImpl implements IDedicatedShareShareFund
         private List<List<Integer>> load, rewardMax;
         private int rewardPool, timeWindowLen;
         private List<List<Double>> rewardMin;
-        private double[] lastRewardSum;
+        private int[] lastRewardSum;
+        private final SmDedicatedShareFundServiceImpl smDedicatedShareFundService
+                = SmDedicatedShareFundServiceImpl.getInstance();
 
         public Builder() {
             this.rewardPool = 0;
@@ -126,13 +134,14 @@ public class SmDedicatedShareFundServiceImpl implements IDedicatedShareShareFund
             return this;
         }
 
-        public Builder setLastRewardSum(double[] lastRewardSum) {
+        public Builder setLastRewardSum(int[] lastRewardSum) {
             this.lastRewardSum = lastRewardSum;
             return this;
         }
 
         public SmDedicatedShareFundServiceImpl build() {
-            return new SmDedicatedShareFundServiceImpl(this);
+            smDedicatedShareFundService.setParam(this);
+            return smDedicatedShareFundService;
         }
     }
 
