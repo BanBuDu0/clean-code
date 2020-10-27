@@ -53,7 +53,7 @@ public class Main {
 
     private String readData(String fileName) {
         try {
-            File file = new File("src/" + fileName);
+            File file = new File("src/main/resources/" + fileName);
             if (file.isFile() && file.exists()) {
                 InputStreamReader read = new InputStreamReader(new FileInputStream(file));
                 BufferedReader bufferedReader = new BufferedReader(read);
@@ -185,7 +185,6 @@ public class Main {
             }
             calculateOtherFund(t);
 
-            // TODO
             for (int city = 0; city < CITY_NUM; ++city) {
                 lastRewardSum[city] = (int) (rewardMin.get(city).get(t) + rewardShardSm.get(city).get(t)
                         + rewardShardDis.get(city).get(t) + rewardShardOther.get(city).get(t));
