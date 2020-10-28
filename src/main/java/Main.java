@@ -160,29 +160,11 @@ public class Main {
         }
     }
 
-    private String verifyRewardMax(int t) {
-        for (int city = 0; city < CITY_NUM; ++city) {
-            double tempTotal = rewardMin.get(city).get(t) + rewardShardSm.get(city).get(t)
-                    + rewardShardDis.get(city).get(t);
-            if (tempTotal > rewardMax.get(city).get(t)) {
-                return "ERROR";
-            }
-        }
-        return null;
-    }
-
-
     private void calculate() {
         for (int t = 0; t < timeWindowLen; ++t) {
             calculateRewardMin(t);
             calculateSmSharedFund(t);
             calculateDisSharedFund(t);
-
-            String err = verifyRewardMax(t);
-            if (null != err) {
-                System.out.println(err);
-                return;
-            }
             calculateOtherFund(t);
 
             for (int city = 0; city < CITY_NUM; ++city) {

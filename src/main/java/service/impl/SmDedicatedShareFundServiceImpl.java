@@ -86,7 +86,12 @@ public class SmDedicatedShareFundServiceImpl implements IDedicatedShareShareFund
                 rewardSmPool -= rewardMin.get(i).get(t);
                 totalIdealSharedSm += calculateIdealShard(i, t);
             }
-            result[city] = Math.min(idealShard[city], (idealShard[city] / totalIdealSharedSm) * rewardSmPool);
+            if (idealShard[city] == 0) {
+                result[city] = 0;
+            } else {
+                result[city] = Math.min(idealShard[city], (idealShard[city] / totalIdealSharedSm) * rewardSmPool);
+            }
+
         }
         return result;
     }

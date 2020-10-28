@@ -86,7 +86,11 @@ public class DisDedicatedShareFundServiceImpl implements IDedicatedShareShareFun
                 rewardDisPool -= sharedSms[i];
                 totalIdealSharedDis += calculateIdealShard(i, t);
             }
-            result[city] = Math.min(idealShard[city], (idealShard[city] / totalIdealSharedDis) * rewardDisPool);
+            if (idealShard[city] == 0) {
+                result[city] = 0;
+            } else {
+                result[city] = Math.min(idealShard[city], (idealShard[city] / totalIdealSharedDis) * rewardDisPool);
+            }
         }
         return result;
     }

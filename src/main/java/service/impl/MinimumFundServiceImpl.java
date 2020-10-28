@@ -31,8 +31,12 @@ public class MinimumFundServiceImpl implements IBaseFundService {
             for (int i = 0; i < Global.CITY_NUM; ++i) {
                 sumOfRewardMax += rewardMax.get(i).get(t);
             }
-            result[city] = Math.min(Math.ceil(rewardPool * ((double) poolMinRate / 100) *
-                    ((double) rewardMax.get(city).get(t) / sumOfRewardMax)), rewardMax.get(city).get(t));
+            if (rewardMax.get(city).get(t) == 0) {
+                result[city] = 0;
+            } else {
+                result[city] = Math.min(Math.ceil(rewardPool * ((double) poolMinRate / 100) *
+                        ((double) rewardMax.get(city).get(t) / sumOfRewardMax)), rewardMax.get(city).get(t));
+            }
         }
         return result;
     }

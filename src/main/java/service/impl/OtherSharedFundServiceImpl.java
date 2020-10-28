@@ -64,9 +64,15 @@ public class OtherSharedFundServiceImpl implements INonDedicatedShareFundService
             rewardOfOtherPool -= sharedDis[city];
             totalOtherDis += load.get(city).get(t) * overFactor[city][t];
         }
-        for (int city = 0; city < CITY_NUM; ++city) {
-            result[city] = Math.min(calculateIdealShard(city, t),
-                    (load.get(city).get(t) * overFactor[city][t] * rewardOfOtherPool) / totalOtherDis);
+        if (totalOtherDis == 0) {
+            for (int city = 0; city < CITY_NUM; ++city) {
+                result[city] = 0;
+            }
+        } else {
+            for (int city = 0; city < CITY_NUM; ++city) {
+                result[city] = Math.min(calculateIdealShard(city, t),
+                        (load.get(city).get(t) * overFactor[city][t] * rewardOfOtherPool) / totalOtherDis);
+            }
         }
         return result;
     }
